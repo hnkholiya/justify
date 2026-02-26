@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Justify — Generator Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── RESET ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --ink:    #0a0a0f;
+  --smoke:  #111018;
+  --card:   #14121e;
+  --card2:  #1a1828;
+  --gold:   #c8a96e;
+  --gold2:  #e8c87a;
+  --teal:   #4ecdc4;
+  --lilac:  #9f8fc8;
+  --white:  #ffffff;
+  --muted:  rgba(255,255,255,0.35);
+  --border: rgba(255,255,255,0.07);
+  --border-gold: rgba(200,169,110,0.2);
+}
+
+html, body {
+  height: 100%;
+  background: var(--ink);
+  color: var(--white);
+  font-family: 'Outfit', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ── NOISE ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* ── BG LINES ── */
+.bg-lines {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(200,169,110,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,169,110,0.04) 1px, transparent 1px);
+  background-size: 52px 52px;
+}
+.bg-glow {
+  position: fixed; z-index: 0; pointer-events: none; border-radius: 50%; filter: blur(100px);
+}
+.bg-glow-1 { width: 600px; height: 600px; background: rgba(200,169,110,0.06); top: -200px; left: -200px; }
+.bg-glow-2 { width: 500px; height: 500px; background: rgba(78,205,196,0.05); bottom: -150px; right: -150px; }
+
+/* ── CURSOR ── */
+.cursor { position:fixed;z-index:9999;pointer-events:none;width:10px;height:10px;background:var(--gold);border-radius:50%;transform:translate(-50%,-50%);transition:width 0.3s,height 0.3s,background 0.3s;mix-blend-mode:difference; }
+.cursor-ring { position:fixed;z-index:9998;pointer-events:none;width:32px;height:32px;border:1.5px solid rgba(200,169,110,0.45);border-radius:50%;transform:translate(-50%,-50%);transition:all 0.14s ease; }
+body:has(button:hover) .cursor, body:has(a:hover) .cursor { width:18px;height:18px;background:var(--teal); }
+body:has(button:hover) .cursor-ring, body:has(a:hover) .cursor-ring { width:48px;height:48px;border-color:var(--teal); }
+
+/* ── NAV ── */
+nav {
+  position: sticky; top: 0; z-index: 200;
+  padding: 18px 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  backdrop-filter: blur(24px);
+  background: rgba(10,10,15,0.8);
+  border-bottom: 1px solid var(--border-gold);
+}
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900; font-size: 1.5rem;
+  color: var(--white); letter-spacing: -0.5px; text-decoration: none;
+}
+.logo span { color: var(--gold); font-style: italic; }
+.nav-pill {
+  display: flex; align-items: center; gap: 7px;
+  background: rgba(200,169,110,0.08);
+  border: 1px solid var(--border-gold);
+  color: var(--gold);
+  padding: 6px 16px; border-radius: 50px;
+  font-size: 0.72rem; font-weight: 500; letter-spacing: 1px;
+}
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: blink 2s infinite; }
+@keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.7)} }
+.back-link {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--muted); text-decoration: none; font-size: 0.8rem; font-weight: 500;
+  letter-spacing: 0.5px;
+  padding: 8px 18px; border-radius: 50px;
+  border: 1px solid var(--border);
+  transition: all 0.3s;
+}
+.back-link:hover { color: var(--gold); border-color: var(--border-gold); background: rgba(200,169,110,0.06); }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  position: relative; z-index: 10;
+  padding: 44px 52px 0;
+  display: flex; align-items: flex-end; justify-content: space-between;
+}
+.ph-eyebrow {
+  font-size: 0.68rem; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--gold); font-weight: 500; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 10px;
+}
+.ph-eyebrow::before { content: ''; width: 20px; height: 1px; background: var(--gold); }
+.ph-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 900; line-height: 1.1;
+}
+.ph-title em { font-style: italic; color: var(--gold); }
+.ph-step-guide {
+  display: flex; gap: 0; align-items: center;
+  padding: 12px 20px;
+  background: var(--card);
+  border: 1px solid var(--border-gold);
+  border-radius: 50px;
+}
+.step-pip { display:flex;align-items:center;gap:8px;padding:0 12px;font-size:0.72rem;color:var(--muted); }
+.step-pip.done { color: var(--gold); }
+.step-pip.active { color: var(--white); font-weight:600; }
+.step-divider { width:1px;height:16px;background:var(--border); }
+.step-num-small { width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:700;background:rgba(255,255,255,0.08); }
+.step-pip.active .step-num-small { background:var(--gold);color:var(--ink); }
+
+/* ── MAIN LAYOUT ── */
+.studio {
+  position: relative; z-index: 10;
+  max-width: 1400px; margin: 0 auto;
+  padding: 32px 52px 60px;
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ── PANEL ── */
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 28px 30px;
+  margin-bottom: 18px;
+  position: relative; overflow: hidden;
+  transition: border-color 0.4s;
+}
+.panel:focus-within { border-color: var(--border-gold); }
+.panel-accent {
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0; transition: opacity 0.4s;
+}
+.panel:focus-within .panel-accent { opacity: 1; }
+
+.step-row {
+  display: flex; align-items: center; gap: 14px; margin-bottom: 22px;
+}
+.step-badge {
+  width: 30px; height: 30px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(200,169,110,0.2), rgba(200,169,110,0.08));
+  border: 1px solid var(--border-gold);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 0.9rem; font-weight: 700; color: var(--gold);
+}
+.step-label {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700; font-size: 1.05rem;
+}
+.step-sublabel { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+
+/* ── INPUT ── */
+.inp-wrap { position: relative; }
+.inp-icon {
+  position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+  font-size: 1rem; pointer-events: none; opacity: 0.5;
+}
+.inp {
+  width: 100%;
+  padding: 15px 18px 15px 44px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--white); font-family: 'Outfit', sans-serif; font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+}
+.inp:focus {
+  border-color: var(--border-gold);
+  box-shadow: 0 0 0 4px rgba(200,169,110,0.08);
+  background: rgba(200,169,110,0.03);
+}
+.inp::placeholder { color: rgba(255,255,255,0.2); }
+.char-row {
+  display: flex; justify-content: flex-end; margin-top: 7px;
+}
+.char-count { font-size: 0.7rem; color: var(--muted); font-weight: 500; }
+
+/* ── TEMPLATE GRID ── */
+.tmpl-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.t-card {
+  border-radius: 16px;
+  padding: 18px 10px 14px;
+  text-align: center; cursor: none;
+  border: 1.5px solid transparent;
+  position: relative; overflow: hidden;
+  transition: transform 0.35s cubic-bezier(0.34, 1.5, 0.64, 1), box-shadow 0.35s, border-color 0.3s;
+  user-select: none;
+}
+.t-card::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,255,255,0); transition: background 0.25s;
+}
+.t-card:hover { transform: translateY(-7px) scale(1.03); box-shadow: 0 18px 36px rgba(0,0,0,0.45); }
+.t-card:hover::after { background: rgba(255,255,255,0.04); }
+.t-card.active {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 3px rgba(200,169,110,0.2), 0 12px 30px rgba(0,0,0,0.5);
+  transform: translateY(-3px) scale(1.02);
+}
+.t-check {
+  position: absolute; top: 8px; right: 8px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--gold); color: var(--ink);
+  font-size: 0.58rem; font-weight: 800;
+  display: none; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  z-index: 2;
+}
+.t-card.active .t-check { display: flex; }
+.t-ico { font-size: 1.9rem; display: block; margin-bottom: 8px; line-height: 1; }
+.t-name {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700; font-size: 0.82rem; line-height: 1.2;
+}
+.t-desc { font-size: 0.62rem; opacity: 0.55; margin-top: 3px; font-weight: 300; }
+
+/* ── GENERATE BUTTON ── */
+.btn-gen {
+  width: 100%; padding: 17px;
+  border: none; border-radius: 50px; cursor: none;
+  background: linear-gradient(135deg, var(--gold), #b8943e);
+  color: var(--ink);
+  font-family: 'Playfair Display', serif;
+  font-weight: 700; font-size: 1.05rem; letter-spacing: 0.3px;
+  position: relative; overflow: hidden;
+  transition: transform 0.3s cubic-bezier(0.34,1.4,0.64,1), box-shadow 0.3s, opacity 0.2s;
+  box-shadow: 0 6px 28px rgba(200,169,110,0.35);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.btn-gen::before {
+  content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.55s ease;
+}
+.btn-gen:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 40px rgba(200,169,110,0.55);
+}
+.btn-gen:hover:not(:disabled)::before { left: 100%; }
+.btn-gen:active:not(:disabled) { transform: scale(0.98); }
+.btn-gen:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.err-box {
+  display: none; margin-top: 14px;
+  background: rgba(192,57,43,0.1);
+  border: 1px solid rgba(192,57,43,0.3);
+  color: #f1948a; border-radius: 12px;
+  padding: 11px 16px; font-size: 0.82rem; text-align: center;
+}
+
+/* ── PREVIEW PANEL ── */
+.preview-panel {
+  background: var(--card);
+  border: 1px solid var(--border-gold);
+  border-radius: 24px;
+  padding: 28px;
+  position: sticky; top: 80px;
+}
+
+.preview-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px;
+}
+.preview-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700; font-size: 1.1rem;
+  display: flex; align-items: center; gap: 10px;
+}
+.preview-live-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold);
+  animation: blink 2s infinite;
+}
+.preview-tmpl-chip {
+  font-size: 0.68rem; color: var(--gold);
+  background: rgba(200,169,110,0.08);
+  border: 1px solid var(--border-gold);
+  padding: 4px 12px; border-radius: 50px;
+  font-weight: 500; letter-spacing: 0.5px;
+  max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.qr-frame {
+  width: 100%; aspect-ratio: 1;
+  border-radius: 20px; overflow: hidden;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border-gold);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 12px;
+  margin-bottom: 20px;
+  position: relative;
+  transition: border-color 0.4s, background 0.4s;
+}
+.qr-frame.has-qr {
+  background: rgba(200,169,110,0.03);
+  box-shadow: inset 0 0 40px rgba(200,169,110,0.05);
+}
+
+/* Corner decorations on frame */
+.qr-frame::before, .qr-frame::after {
+  content: ''; position: absolute;
+  width: 20px; height: 20px;
+  border-color: var(--gold); border-style: solid;
+  opacity: 0.3;
+}
+.qr-frame::before { top: 12px; left: 12px; border-width: 2px 0 0 2px; border-radius: 3px 0 0 0; }
+.qr-frame::after  { bottom: 12px; right: 12px; border-width: 0 2px 2px 0; border-radius: 0 0 3px 0; }
+
+.empty-hint { text-align: center; color: var(--muted); padding: 20px; }
+.empty-icon-wrap {
+  width: 72px; height: 72px; border-radius: 18px;
+  background: rgba(200,169,110,0.06);
+  border: 1px solid var(--border-gold);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 2rem;
+  animation: emptyBob 3s ease-in-out infinite;
+}
+@keyframes emptyBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+.empty-hint p { font-size: 0.82rem; line-height: 1.7; font-weight: 300; }
+.empty-hint strong { color: var(--white); font-weight: 600; }
+
+.loader {
+  display: none; position: absolute; inset: 0;
+  backdrop-filter: blur(6px); background: rgba(10,10,15,0.7);
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 14px;
+  border-radius: 19px;
+}
+.spin-outer {
+  width: 52px; height: 52px; position: relative;
+}
+.spin-ring {
+  width: 52px; height: 52px; border-radius: 50%;
+  border: 2px solid rgba(200,169,110,0.15);
+  border-top-color: var(--gold);
+  border-right-color: var(--teal);
+  animation: spin 1s linear infinite;
+  position: absolute; inset: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin-inner {
+  position: absolute; inset: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(200,169,110,0.1);
+  border-bottom-color: var(--gold);
+  animation: spin 0.7s linear infinite reverse;
+}
+.loader p { font-size: 0.78rem; color: var(--muted); font-weight: 300; letter-spacing: 0.5px; }
+
+#qrImg {
+  width: 100%; height: 100%;
+  object-fit: contain; padding: 16px;
+  display: none;
+  animation: revealQR 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes revealQR {
+  from { opacity: 0; transform: scale(0.7) rotate(-4deg); }
+  to   { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* Scan line on QR */
+.scan-bar {
+  display: none; position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--teal), transparent);
+  animation: scanMove 2s ease-in-out infinite;
+}
+.qr-frame.has-qr .scan-bar { display: block; }
+@keyframes scanMove { 0%{top:15%;opacity:0} 15%{opacity:0.6} 85%{opacity:0.6} 100%{top:85%;opacity:0} }
+
+/* ── DOWNLOAD BTN ── */
+.btn-dl {
+  width: 100%; padding: 14px;
+  border-radius: 50px; cursor: none;
+  border: 1px solid var(--border-gold);
+  background: rgba(200,169,110,0.06);
+  color: var(--gold);
+  font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.9rem;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-bottom: 16px;
+  transition: all 0.3s cubic-bezier(0.34,1.4,0.64,1);
+}
+.btn-dl:hover:not(:disabled) {
+  background: rgba(200,169,110,0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(200,169,110,0.25);
+}
+.btn-dl:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Status bar */
+.status-bar {
+  padding: 12px 16px; border-radius: 12px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  font-size: 0.76rem; color: var(--muted);
+  text-align: center; line-height: 1.6;
+  transition: all 0.4s;
+}
+.status-bar.active {
+  border-color: var(--border-gold);
+  background: rgba(200,169,110,0.04);
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 28px; right: 28px; z-index: 9999;
+  padding: 13px 22px; border-radius: 50px;
+  background: var(--card);
+  border: 1px solid var(--border-gold);
+  color: var(--white);
+  font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 0.84rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  transform: translateY(80px) scale(0.9); opacity: 0;
+  transition: all 0.45s cubic-bezier(0.34, 1.5, 0.64, 1);
+  display: flex; align-items: center; gap: 10px;
+  letter-spacing: 0.2px;
+}
+.toast.show { transform: translateY(0) scale(1); opacity: 1; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 960px) {
+  .studio { grid-template-columns: 1fr; padding: 24px 24px 60px; }
+  .page-header { padding: 32px 24px 0; flex-direction: column; align-items: flex-start; gap: 16px; }
+  .ph-step-guide { display: none; }
+  .preview-panel { position: static; }
+}
+@media (max-width: 520px) {
+  nav { padding: 14px 20px; }
+  .nav-pill { display: none; }
+  .tmpl-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- Cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- BG -->
+<div class="bg-lines"></div>
+<div class="bg-glow bg-glow-1"></div>
+<div class="bg-glow bg-glow-2"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="logo">Just<span>ify</span></a>
+  <div class="nav-pill">
+    <span class="nav-dot"></span>
+    Studio Mode
+  </div>
+  <a href="/" class="back-link">← Home</a>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div>
+    <div class="ph-eyebrow">Generator Studio</div>
+    <h1 class="ph-title">Craft your <em>perfect</em> QR</h1>
+  </div>
+  <div class="ph-step-guide">
+    <div class="step-pip active">
+      <span class="step-num-small">1</span> Content
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-pip">
+      <span class="step-num-small">2</span> Template
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-pip">
+      <span class="step-num-small">3</span> Generate
+    </div>
+  </div>
+</div>
+
+<!-- STUDIO -->
+<div class="studio">
+
+  <!-- LEFT COLUMN -->
+  <div>
+
+    <!-- Step 1 -->
+    <div class="panel" id="panel1">
+      <div class="panel-accent"></div>
+      <div class="step-row">
+        <div class="step-badge">I</div>
+        <div>
+          <div class="step-label">Enter Your Content</div>
+          <div class="step-sublabel">URL, text, phone, email — anything works</div>
+        </div>
+      </div>
+      <div class="inp-wrap">
+        <span class="inp-icon">🔗</span>
+        <input type="text" id="dataIn" class="inp"
+               placeholder="https://your-link.com or any text…"
+               maxlength="500"
+               oninput="onInput(this)">
+      </div>
+      <div class="char-row">
+        <span class="char-count" id="charCount">0 / 500</span>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="panel">
+      <div class="panel-accent"></div>
+      <div class="step-row">
+        <div class="step-badge">II</div>
+        <div>
+          <div class="step-label">Choose a Template</div>
+          <div class="step-sublabel">9 curated design styles</div>
+        </div>
+      </div>
+      <div class="tmpl-grid" id="tmplGrid">
+        {% for key, tmpl in templates.items() %}
+        <div class="t-card {% if loop.first %}active{% endif %}"
+             data-key="{{ key }}"
+             style="background: {{ tmpl_bg(key) }}">
+          <div class="t-check">✓</div>
+          <span class="t-ico">{{ tmpl.icon }}</span>
+          <div class="t-name">{{ tmpl.name }}</div>
+          <div class="t-desc">{{ tmpl.desc }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="panel">
+      <div class="panel-accent"></div>
+      <div class="step-row">
+        <div class="step-badge">III</div>
+        <div>
+          <div class="step-label">Generate</div>
+          <div class="step-sublabel">Instant high-quality output</div>
+        </div>
+      </div>
+      <button class="btn-gen" id="genBtn" onclick="generateQR()">
+        <span id="btnTxt">Generate QR Code →</span>
+      </button>
+      <div class="err-box" id="errBox"></div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT: PREVIEW -->
+  <div class="preview-panel">
+    <div class="preview-header">
+      <div class="preview-title">
+        <div class="preview-live-dot"></div>
+        Live Preview
+      </div>
+      <div class="preview-tmpl-chip" id="tmplChip">Classic</div>
+    </div>
+
+    <div class="qr-frame" id="qrFrame">
+      <div class="scan-bar"></div>
+      <div class="empty-hint" id="emptyHint">
+        <div class="empty-icon-wrap">▣</div>
+        <p>Enter your content<br>then click <strong>Generate</strong></p>
+      </div>
+      <div class="loader" id="loader">
+        <div class="spin-outer">
+          <div class="spin-ring"></div>
+          <div class="spin-inner"></div>
+        </div>
+        <p>Crafting your code…</p>
+      </div>
+      <img id="qrImg" alt="Generated QR Code">
+    </div>
+
+    <button class="btn-dl" id="dlBtn" disabled onclick="downloadQR()">
+      ↓ &nbsp; Download PNG
+    </button>
+
+    <div class="status-bar" id="statusBar">
+      Select a template and enter your content
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const templates = {{ templates | tojson }};
+let selected = Object.keys(templates)[0];
+let currentData = '';
+
+/* ── CURSOR ── */
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function ani() {
+  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+  rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  requestAnimationFrame(ani);
+})();
+
+/* ── TEMPLATE SELECT ── */
+document.querySelectorAll('.t-card').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.t-card').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    selected = el.dataset.key;
+    updateChip();
+    updateStatus();
+  });
+});
+
+function updateChip() {
+  const t = templates[selected];
+  if (t) document.getElementById('tmplChip').textContent = t.icon + ' ' + t.name;
+}
+
+function updateStatus() {
+  const t = templates[selected];
+  const bar = document.getElementById('statusBar');
+  if (t) {
+    bar.textContent = t.icon + '  ' + t.name + ' — ' + t.desc;
+    bar.classList.add('active');
+  }
+}
+updateChip(); updateStatus();
+
+/* ── INPUT ── */
+function onInput(inp) {
+  const cc = document.getElementById('charCount');
+  cc.textContent = inp.value.length + ' / 500';
+  cc.style.color = inp.value.length > 420 ? '#e07070' : 'var(--muted)';
+}
+
+/* ── GENERATE ── */
+async function generateQR() {
+  const data = document.getElementById('dataIn').value.trim();
+  const errBox = document.getElementById('errBox');
+  errBox.style.display = 'none';
+
+  if (!data) {
+    errBox.textContent = '⚠️  Please enter a URL or text first.';
+    errBox.style.display = 'block';
+    return;
+  }
+
+  currentData = data;
+  const btn = document.getElementById('genBtn');
+  const btnTxt = document.getElementById('btnTxt');
+  const loader = document.getElementById('loader');
+  const qrImg = document.getElementById('qrImg');
+  const emptyHint = document.getElementById('emptyHint');
+  const qrFrame = document.getElementById('qrFrame');
+
+  btn.disabled = true;
+  btnTxt.textContent = 'Crafting…';
+  loader.style.display = 'flex';
+  qrImg.style.display = 'none';
+  emptyHint.style.display = 'none';
+
+  try {
+    const fd = new FormData();
+    fd.append('data', data);
+    fd.append('template', selected);
+
+    const res = await fetch('/generate', { method: 'POST', body: fd });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Server error ' + res.status);
+    }
+
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+
+    qrImg.style.animation = 'none';
+    qrImg.offsetHeight;
+    qrImg.style.animation = '';
+
+    qrImg.src = json.image;
+    qrImg.style.display = 'block';
+    qrFrame.classList.add('has-qr');
+    document.getElementById('dlBtn').disabled = false;
+    showToast('✦  QR code ready');
+
+  } catch(e) {
+    errBox.textContent = '✕  ' + (e.message || 'Something went wrong. Try again.');
+    errBox.style.display = 'block';
+    emptyHint.style.display = 'flex';
+    qrFrame.classList.remove('has-qr');
+    showToast('✕  Generation failed');
+  } finally {
+    loader.style.display = 'none';
+    btn.disabled = false;
+    btnTxt.textContent = 'Generate QR Code →';
+  }
+}
+
+/* ── DOWNLOAD ── */
+async function downloadQR() {
+  const data = document.getElementById('dataIn').value.trim();
+  if (!data) return;
+  const fd = new FormData();
+  fd.append('data', data);
+  fd.append('template', selected);
+  fd.append('download', 'true');
+  try {
+    const res = await fetch('/generate', { method: 'POST', body: fd });
+    if (!res.ok) throw new Error('Download failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'justify_' + selected + '.png';
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('✦  Downloaded');
+  } catch(e) { showToast('✕  Download failed'); }
+}
+
+/* ── ENTER KEY ── */
+document.getElementById('dataIn').addEventListener('keydown', e => {
+  if (e.key === 'Enter') generateQR();
+});
+
+/* ── TOAST ── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

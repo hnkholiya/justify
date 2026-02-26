@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Justify — QR Code Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & ROOT ── */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+:root {
+  --ink:    #0a0a0f;
+  --paper:  #f5f0e8;
+  --gold:   #c8a96e;
+  --gold2:  #e8c87a;
+  --cream:  #ede8da;
+  --smoke:  #1a1820;
+  --lilac:  #9f8fc8;
+  --teal:   #4ecdc4;
+  --rust:   #c0392b;
+  --white:  #ffffff;
+  --r:      24px;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--ink);
+  color: var(--white);
+  font-family: 'Outfit', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ── CUSTOM CURSOR ── */
+.cursor {
+  position: fixed; z-index: 9999; pointer-events: none;
+  width: 12px; height: 12px;
+  background: var(--gold);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: transform 0.1s, width 0.3s, height 0.3s, background 0.3s;
+  mix-blend-mode: difference;
+}
+.cursor-ring {
+  position: fixed; z-index: 9998; pointer-events: none;
+  width: 36px; height: 36px;
+  border: 1.5px solid rgba(200, 169, 110, 0.5);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 0.15s ease;
+}
+body:has(a:hover) .cursor { width: 20px; height: 20px; background: var(--teal); }
+body:has(a:hover) .cursor-ring { width: 52px; height: 52px; border-color: var(--teal); }
+
+/* ── NOISE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+  padding: 22px 52px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.nav-logo {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900; font-size: 1.6rem;
+  color: var(--white); letter-spacing: -0.5px;
+  text-decoration: none;
+}
+.nav-logo span { color: var(--gold); font-style: italic; }
+.nav-right { display: flex; align-items: center; gap: 32px; }
+.nav-link {
+  color: rgba(255,255,255,0.45); font-size: 0.78rem;
+  text-decoration: none; letter-spacing: 1.5px; text-transform: uppercase;
+  font-weight: 500; transition: color 0.3s;
+}
+.nav-link:hover { color: var(--gold); }
+.nav-cta {
+  background: var(--gold);
+  color: var(--ink); padding: 9px 22px; border-radius: 50px;
+  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.5px;
+  text-decoration: none; transition: all 0.3s;
+}
+.nav-cta:hover { background: var(--gold2); transform: translateY(-1px); }
+
+/* ── HERO ── */
+.hero {
+  position: relative; min-height: 100vh;
+  display: grid; grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+}
+
+/* Left half — dark editorial */
+.hero-left {
+  position: relative; z-index: 10;
+  padding: 160px 52px 80px 60px;
+  display: flex; flex-direction: column; justify-content: center;
+  background: var(--ink);
+}
+
+/* Animated lines */
+.hero-lines {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+}
+.h-line {
+  position: absolute; left: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(200,169,110,0.15), transparent);
+  animation: lineSweep 6s ease-in-out infinite;
+}
+.h-line:nth-child(1) { top: 25%; width: 70%; animation-delay: 0s; }
+.h-line:nth-child(2) { top: 50%; width: 45%; animation-delay: -2s; }
+.h-line:nth-child(3) { top: 75%; width: 60%; animation-delay: -4s; }
+@keyframes lineSweep {
+  0% { transform: translateX(-100%); opacity: 0; }
+  50% { opacity: 1; }
+  100% { transform: translateX(150%); opacity: 0; }
+}
+
+.eyebrow {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 28px;
+  animation: fadeInUp 0.8s ease both;
+}
+.eyebrow-line { width: 32px; height: 1px; background: var(--gold); }
+.eyebrow-text {
+  font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--gold); font-weight: 500;
+}
+
+.hero-headline {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900;
+  font-size: clamp(3.2rem, 5.5vw, 6rem);
+  line-height: 1;
+  letter-spacing: -2px;
+  animation: fadeInUp 0.8s 0.1s ease both;
+}
+.hero-headline .italic { font-style: italic; color: var(--gold); }
+.hero-headline .outline {
+  -webkit-text-stroke: 1.5px rgba(255,255,255,0.5);
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-sub {
+  margin-top: 24px;
+  font-size: 1rem; color: rgba(255,255,255,0.45);
+  max-width: 400px; line-height: 1.85;
+  font-weight: 300;
+  animation: fadeInUp 0.8s 0.2s ease both;
+}
+
+.hero-actions {
+  display: flex; gap: 16px; margin-top: 44px; flex-wrap: wrap;
+  animation: fadeInUp 0.8s 0.3s ease both;
+}
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: var(--gold);
+  color: var(--ink);
+  padding: 16px 34px; border-radius: 50px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600; font-size: 0.9rem; letter-spacing: 0.3px;
+  text-decoration: none; border: none; cursor: none;
+  position: relative; overflow: hidden;
+  transition: all 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.btn-primary::before {
+  content: ''; position: absolute; inset: 0;
+  background: var(--gold2);
+  transform: translateX(-100%);
+  transition: transform 0.4s ease;
+}
+.btn-primary span { position: relative; z-index: 1; }
+.btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 36px rgba(200,169,110,0.4); }
+.btn-primary:hover::before { transform: translateX(0); }
+
+.btn-outline {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.7);
+  padding: 16px 34px; border-radius: 50px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500; font-size: 0.9rem;
+  text-decoration: none; cursor: none;
+  transition: all 0.3s;
+}
+.btn-outline:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-3px); }
+
+/* Stat pills */
+.hero-stats {
+  display: flex; gap: 24px; margin-top: 52px;
+  animation: fadeInUp 0.8s 0.4s ease both;
+}
+.stat {
+  display: flex; flex-direction: column;
+  border-left: 1px solid rgba(200,169,110,0.3);
+  padding-left: 16px;
+}
+.stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem; font-weight: 700; color: var(--gold);
+  line-height: 1;
+}
+.stat-label { font-size: 0.68rem; color: rgba(255,255,255,0.35); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+
+/* Right half — visual panel */
+.hero-right {
+  position: relative; overflow: hidden;
+  background: var(--smoke);
+}
+
+/* Morphing blob */
+.blob-wrap {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.blob {
+  width: 65%; aspect-ratio: 1;
+  border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+  background: radial-gradient(135deg, rgba(200,169,110,0.18) 0%, rgba(78,205,196,0.12) 50%, rgba(159,143,200,0.15) 100%);
+  filter: blur(2px);
+  animation: morph 10s ease-in-out infinite;
+}
+@keyframes morph {
+  0%,100% { border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%; }
+  25%      { border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%; }
+  50%      { border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%; }
+  75%      { border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%; }
+}
+
+/* Floating QR mock cards */
+.qr-float-wrap {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.qr-stack { position: relative; width: 280px; height: 320px; }
+.qr-mock {
+  position: absolute;
+  border-radius: 20px;
+  padding: 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+.qr-mock-1 {
+  width: 200px;
+  background: linear-gradient(135deg, #1c1200, #3d2b00);
+  border: 1px solid rgba(200,169,110,0.2);
+  top: 20px; left: 0;
+  animation: floatCard1 6s ease-in-out infinite;
+}
+.qr-mock-2 {
+  width: 180px;
+  background: linear-gradient(135deg, #0d0221, #1a0533);
+  border: 1px solid rgba(159,143,200,0.2);
+  bottom: 20px; right: 0;
+  animation: floatCard2 7s ease-in-out infinite -3s;
+}
+.qr-mock-3 {
+  width: 160px;
+  background: linear-gradient(135deg, #050518, #0a1628);
+  border: 1px solid rgba(78,205,196,0.2);
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  animation: floatCard3 5s ease-in-out infinite -1.5s;
+}
+@keyframes floatCard1 { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-16px) rotate(-1deg)} }
+@keyframes floatCard2 { 0%,100%{transform:translateY(0) rotate(4deg)} 50%{transform:translateY(-12px) rotate(2deg)} }
+@keyframes floatCard3 { 0%,100%{transform:translate(-50%,-50%) rotate(-1deg)} 50%{transform:translate(-50%,-58%) rotate(1deg)} }
+
+/* Mini QR grid inside cards */
+.mini-qr {
+  display: grid; gap: 2px;
+  padding: 8px; border-radius: 8px; background: var(--white);
+}
+.mini-qr-1 { grid-template-columns: repeat(7, 1fr); width: 70px; height: 70px; }
+.mini-qr-2 { grid-template-columns: repeat(6, 1fr); width: 60px; height: 60px; }
+.mini-qr-3 { grid-template-columns: repeat(5, 1fr); width: 52px; height: 52px; }
+.qr-dot { border-radius: 1px; }
+.qr-mock-1 .qr-dot { background: #d4a017; }
+.qr-mock-2 .qr-dot { background: #9b5de5; }
+.qr-mock-3 .qr-dot { background: #00c8c0; }
+
+.mock-label {
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; opacity: 0.7;
+}
+.qr-mock-1 .mock-label { color: var(--gold); }
+.qr-mock-2 .mock-label { color: var(--lilac); }
+.qr-mock-3 .mock-label { color: var(--teal); }
+
+/* Scan ring */
+.scan-overlay {
+  position: absolute; inset: 0;
+  pointer-events: none; overflow: hidden;
+}
+.scan-line {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--teal), transparent);
+  opacity: 0.4;
+  animation: scan 4s ease-in-out infinite;
+}
+@keyframes scan { 0%{top:20%;opacity:0} 20%{opacity:0.4} 80%{opacity:0.4} 100%{top:80%;opacity:0} }
+
+/* Corner decorations */
+.corner {
+  position: absolute;
+  width: 24px; height: 24px;
+  border-color: rgba(200,169,110,0.4);
+  border-style: solid;
+}
+.corner-tl { top: 20px; left: 20px; border-width: 2px 0 0 2px; }
+.corner-tr { top: 20px; right: 20px; border-width: 2px 2px 0 0; }
+.corner-bl { bottom: 20px; left: 20px; border-width: 0 0 2px 2px; }
+.corner-br { bottom: 20px; right: 20px; border-width: 0 2px 2px 0; }
+
+/* ── MARQUEE BAND ── */
+.marquee-band {
+  position: relative; z-index: 20;
+  background: var(--gold);
+  padding: 14px 0;
+  overflow: hidden;
+  transform: skewY(-1.5deg);
+  margin: -8px 0;
+}
+.marquee-inner {
+  display: flex; gap: 0;
+  animation: marquee 20s linear infinite;
+  white-space: nowrap;
+}
+.marquee-inner span {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.85rem; font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 1px;
+  padding: 0 28px;
+  display: flex; align-items: center; gap: 12px;
+}
+.marquee-inner span::after {
+  content: '✦';
+  font-size: 0.6rem;
+  opacity: 0.5;
+}
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ── FEATURES SECTION ── */
+.features {
+  position: relative; z-index: 10;
+  padding: 120px 60px;
+  max-width: 1300px; margin: 0 auto;
+}
+.feat-header {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 70px;
+}
+.feat-label {
+  font-size: 0.7rem; letter-spacing: 4px; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 12px; font-weight: 500;
+}
+.feat-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  font-weight: 900; line-height: 1.1;
+}
+.feat-title em { font-style: italic; color: var(--gold); }
+.feat-count {
+  font-family: 'Playfair Display', serif;
+  font-size: 5rem; font-weight: 900;
+  color: rgba(255,255,255,0.05);
+  line-height: 1;
+}
+
+.feat-grid {
+  display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 2px;
+}
+.feat-card {
+  background: var(--smoke);
+  padding: 44px 36px;
+  position: relative; overflow: hidden;
+  transition: background 0.4s;
+}
+.feat-card:first-child { border-radius: 24px 0 0 24px; }
+.feat-card:last-child { border-radius: 0 24px 24px 0; }
+.feat-card::before {
+  content: ''; position: absolute;
+  bottom: 0; left: 0; right: 0; height: 3px;
+  background: var(--gold);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.4s ease;
+}
+.feat-card:hover { background: #1e1c2e; }
+.feat-card:hover::before { transform: scaleX(1); }
+.feat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 3rem; font-weight: 900;
+  color: rgba(255,255,255,0.06);
+  margin-bottom: 20px; line-height: 1;
+  transition: color 0.4s;
+}
+.feat-card:hover .feat-num { color: rgba(200,169,110,0.15); }
+.feat-ico {
+  font-size: 1.8rem; margin-bottom: 18px; display: block;
+  transition: transform 0.4s cubic-bezier(0.34,1.6,0.64,1);
+}
+.feat-card:hover .feat-ico { transform: scale(1.2) rotate(-5deg); }
+.feat-card h3 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem; font-weight: 700; margin-bottom: 12px;
+}
+.feat-card p { color: rgba(255,255,255,0.4); font-size: 0.88rem; line-height: 1.75; font-weight: 300; }
+
+/* ── TEMPLATES SECTION ── */
+.templates-section {
+  position: relative; z-index: 10;
+  padding: 0 0 120px;
+}
+.tmpl-header {
+  padding: 0 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 44px;
+}
+.tmpl-section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 3.5vw, 2.8rem);
+  font-weight: 900;
+}
+.tmpl-section-title em { font-style: italic; color: var(--gold); }
+.view-all-link {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--gold); text-decoration: none;
+  font-size: 0.82rem; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; transition: gap 0.3s;
+}
+.view-all-link:hover { gap: 14px; }
+
+.tmpl-scroll {
+  display: flex; gap: 16px;
+  padding: 0 60px 16px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.tmpl-scroll::-webkit-scrollbar { display: none; }
+
+.tmpl-item {
+  flex: 0 0 200px;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: none;
+  position: relative;
+  transition: transform 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.tmpl-item:hover { transform: translateY(-14px) scale(1.02); }
+.tmpl-item-inner {
+  padding: 30px 20px 24px;
+  text-align: center; height: 200px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.tmpl-item-inner::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(255,255,255,0); transition: background 0.3s;
+}
+.tmpl-item:hover .tmpl-item-inner::after { background: rgba(255,255,255,0.05); }
+.tmpl-badge-new {
+  position: absolute; top: 10px; right: 10px;
+  background: var(--gold); color: var(--ink);
+  font-size: 0.55rem; font-weight: 700; letter-spacing: 1px;
+  padding: 3px 8px; border-radius: 20px; text-transform: uppercase;
+}
+.tmpl-big-icon { font-size: 2.8rem; margin-bottom: 12px; display: block; }
+.tmpl-name {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700; font-size: 1rem; margin-bottom: 4px;
+}
+.tmpl-desc { font-size: 0.68rem; opacity: 0.55; }
+
+/* ── CTA SECTION ── */
+.cta-section {
+  position: relative; z-index: 10;
+  margin: 0 60px 100px;
+  border-radius: 32px;
+  background: linear-gradient(135deg, #1a160d 0%, #0d0a1a 50%, #0a1218 100%);
+  border: 1px solid rgba(200,169,110,0.15);
+  padding: 80px 70px;
+  overflow: hidden;
+  display: flex; align-items: center; justify-content: space-between; gap: 40px;
+}
+.cta-section::before {
+  content: ''; position: absolute;
+  top: -100px; right: -100px;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(200,169,110,0.1) 0%, transparent 70%);
+  animation: ctaOrb 8s ease-in-out infinite;
+}
+@keyframes ctaOrb { 0%,100%{transform:scale(1)} 50%{transform:scale(1.2)} }
+.cta-text { position: relative; z-index: 1; }
+.cta-eyebrow {
+  font-size: 0.7rem; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 16px; font-weight: 500;
+  display: flex; align-items: center; gap: 10px;
+}
+.cta-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--gold); }
+.cta-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 3.5vw, 3rem);
+  font-weight: 900; line-height: 1.15; margin-bottom: 16px;
+}
+.cta-title em { font-style: italic; color: var(--gold); }
+.cta-sub { font-size: 0.92rem; color: rgba(255,255,255,0.4); max-width: 400px; line-height: 1.75; font-weight: 300; }
+.cta-action { position: relative; z-index: 1; flex-shrink: 0; }
+.cta-btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  background: var(--gold);
+  color: var(--ink);
+  padding: 20px 44px; border-radius: 50px;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700; font-size: 1rem;
+  text-decoration: none; cursor: none;
+  transition: all 0.35s cubic-bezier(0.34,1.4,0.64,1);
+  box-shadow: 0 8px 40px rgba(200,169,110,0.3);
+  white-space: nowrap;
+}
+.cta-btn:hover { transform: translateY(-4px) scale(1.04); box-shadow: 0 20px 56px rgba(200,169,110,0.5); background: var(--gold2); }
+.cta-arrow { font-size: 1.1rem; transition: transform 0.3s; }
+.cta-btn:hover .cta-arrow { transform: translateX(4px); }
+
+/* ── FOOTER ── */
+footer {
+  position: relative; z-index: 10;
+  padding: 36px 60px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.footer-logo {
+  font-family: 'Playfair Display', serif;
+  font-weight: 900; font-size: 1.3rem; color: var(--white);
+}
+.footer-logo span { color: var(--gold); font-style: italic; }
+.footer-copy { font-size: 0.75rem; color: rgba(255,255,255,0.2); }
+.footer-link { color: var(--gold); text-decoration: none; font-weight: 500; transition: opacity 0.3s; }
+.footer-link:hover { opacity: 0.7; }
+
+/* ── KEYFRAMES ── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-right { min-height: 420px; }
+  .feat-grid { grid-template-columns: 1fr; }
+  .feat-card:first-child { border-radius: 24px 24px 0 0; }
+  .feat-card:last-child { border-radius: 0 0 24px 24px; }
+}
+@media (max-width: 700px) {
+  nav { padding: 18px 24px; }
+  .nav-right .nav-link { display: none; }
+  .hero-left { padding: 130px 24px 60px; }
+  .features, .tmpl-header { padding-left: 24px; padding-right: 24px; }
+  .tmpl-scroll { padding-left: 24px; }
+  .cta-section { margin: 0 24px 80px; padding: 52px 36px; flex-direction: column; }
+  footer { padding: 28px 24px; flex-direction: column; gap: 12px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">Just<span>ify</span></a>
+  <div class="nav-right">
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#templates" class="nav-link">Templates</a>
+    <a href="/generator" class="nav-cta">Launch Studio →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-lines">
+      <div class="h-line"></div>
+      <div class="h-line"></div>
+      <div class="h-line"></div>
+    </div>
+
+    <div class="eyebrow">
+      <div class="eyebrow-line"></div>
+      <div class="eyebrow-text">QR Code Studio · Est. 2024</div>
+    </div>
+
+    <h1 class="hero-headline">
+      Design QR<br>
+      Codes That<br>
+      <span class="italic">Speak</span> <span class="outline">Louder</span>
+    </h1>
+
+    <p class="hero-sub">
+      Nine curated templates. Instant generation. Scannable perfection — crafted for brands that refuse to blend in.
+    </p>
+
+    <div class="hero-actions">
+      <a href="/generator" class="btn-primary"><span>⚡ Open Studio</span></a>
+      <a href="#templates" class="btn-outline">Browse Templates</a>
+    </div>
+
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-num">9</div>
+        <div class="stat-label">Templates</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">∞</div>
+        <div class="stat-label">Generations</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">Free</div>
+        <div class="stat-label">Forever</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="blob-wrap"><div class="blob"></div></div>
+
+    <div class="corner corner-tl"></div>
+    <div class="corner corner-tr"></div>
+    <div class="corner corner-bl"></div>
+    <div class="corner corner-br"></div>
+
+    <div class="qr-float-wrap">
+      <div class="qr-stack">
+        <!-- Card 1: Gold -->
+        <div class="qr-mock qr-mock-1">
+          <div class="mini-qr mini-qr-1" id="miniQr1"></div>
+          <div class="mock-label">Gold Rush</div>
+        </div>
+        <!-- Card 2: Galaxy -->
+        <div class="qr-mock qr-mock-2">
+          <div class="mini-qr mini-qr-2" id="miniQr2"></div>
+          <div class="mock-label">Galaxy</div>
+        </div>
+        <!-- Card 3: Neon -->
+        <div class="qr-mock qr-mock-3">
+          <div class="mini-qr mini-qr-3" id="miniQr3"></div>
+          <div class="mock-label">Neon</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scan-overlay"><div class="scan-line"></div></div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-band">
+  <div class="marquee-inner" id="marquee"></div>
+</div>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+  <div class="feat-header">
+    <div>
+      <div class="feat-label">Why Justify</div>
+      <h2 class="feat-title">Built for<br><em>craft &amp; quality</em></h2>
+    </div>
+    <div class="feat-count">03</div>
+  </div>
+
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-num">01</div>
+      <span class="feat-ico">🎨</span>
+      <h3>9 Unique Templates</h3>
+      <p>Every template is a distinct visual world — from luxury Gold Rush to cosmic Galaxy, fresh Forest to electric Neon. Each has its own soul.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-num">02</div>
+      <span class="feat-ico">⚡</span>
+      <h3>Instant &amp; Reliable</h3>
+      <p>Powered by Python's qrcode engine. Every code generated is guaranteed scannable. No visual noise, just clean data.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-num">03</div>
+      <span class="feat-ico">💾</span>
+      <h3>Print-Ready PNG</h3>
+      <p>High-resolution output — ready for business cards, posters, menus, or digital campaigns. No watermarks, ever.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TEMPLATES -->
+<section class="templates-section" id="templates">
+  <div class="tmpl-header">
+    <h2 class="tmpl-section-title">Choose your <em>aesthetic</em></h2>
+    <a href="/generator" class="view-all-link">Open Studio →</a>
+  </div>
+  <div class="tmpl-scroll">
+    <div class="tmpl-item" onclick="location.href='/generator'" style="background:linear-gradient(135deg,#141414,#2a2a2a)">
+      <div class="tmpl-item-inner">
+        <span class="tmpl-big-icon">◼</span>
+        <div class="tmpl-name">Classic</div>
+        <div class="tmpl-desc">Black & white</div>
+      </div>
+    </div>
+    <div class="tmpl-item" onclick="location.href='/generator'" style="background:linear-gradient(135deg,#050518,#0a1628)">
+      <div class="tmpl-item-inner">
+        <div class="tmpl-badge-new">Popular</div>
+        <span class="tmpl-big-icon">⚡</span>
+        <div class="tmpl-name" style="color:#00fff0">Neon Pulse</div>
+        <div class="tmpl-desc">Electric cyan</div>
+      </div>
+    </div>
+    <div class="tmpl-item" onclick="location.href='/generator'" style="background:linear-gradient(135deg,#1a0500,#3d0f00)">
+      <div class="tmpl-item-inner">
+        <span class="tmpl-big-icon">🔥</span>
+        <div class="tmpl-name" style="color:#ff7043">Inferno</div>
+        <div class="tmpl-desc">Blazing red-orange</div>
+      </div>
+    </div>
+    <div class="tmpl-item" onclick="location.href='/generator'" style="background:linear-gradient(135deg,#e8f5e9,#a5d6a7)">
+      <div class="tmpl-item-inner">
+        <span class="tmpl-big-icon">🌿</span>
+        <div class="tmpl-name" style="color:#1b5e20">Forest</div>
+        <div class="tmpl-desc">Nature green</div>
+      </div>
+    </div>
+    <div class="tmpl-item" onclick="location.href='/generator'" style="background:linear-gradient(135deg,#0d0221,#1a0533)">
+      <div class="tmpl-item-inner">
+        <div class="tmpl-badge-new">Fan fav</div>
+        <span class="tmpl-big-icon">🌌</span>
+        <div class="tmpl-name" style="color:#b388ff">Galaxy</div>
+        <div class="tmpl-desc">Cosmic purple</div>
+      </div>
+    </div>
+    <div class="tmpl-item" onclick="location.href='/generator'" style="background:linear-gradient(135deg,#1c1200,#3d2b00)">
+      <div class="tmpl-item-inner">
+        <span class="tmpl-big-icon">✦</span>
+        <div class="tmpl-name" style="color:#d4a017">Gold Rush</div>
+        <div class="tmpl-desc">Luxury metallic</div>
+      </div>
+    </div>
+    <div class="tmpl-item" onclick="location.href='/generator'" style="background:linear-gradient(135deg,#03045e,#0077b6)">
+      <div class="tmpl-item-inner">
+        <span class="tmpl-big-icon">🌊</span>
+        <div class="tmpl-name" style="color:#90e0ef">Ocean</div>
+        <div class="tmpl-desc">Deep sea blue</div>
+      </div>
+    </div>
+    <div class="tmpl-item" onclick="location.href='/generator'" style="background:linear-gradient(135deg,#fce4ec,#f8bbd9)">
+      <div class="tmpl-item-inner">
+        <span class="tmpl-big-icon">🌸</span>
+        <div class="tmpl-name" style="color:#c2185b">Rose Gold</div>
+        <div class="tmpl-desc">Elegant pink</div>
+      </div>
+    </div>
+    <div class="tmpl-item" onclick="location.href='/generator'" style="background:linear-gradient(135deg,#0a0e1a,#0d1b2a)">
+      <div class="tmpl-item-inner">
+        <span class="tmpl-big-icon">🌙</span>
+        <div class="tmpl-name" style="color:#90caf9">Midnight</div>
+        <div class="tmpl-desc">Dark elegance</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="cta-text">
+    <div class="cta-eyebrow">Start creating</div>
+    <h2 class="cta-title">Your QR code<br>deserves to look <em>this good</em></h2>
+    <p class="cta-sub">No account. No watermarks. No limits. Just beautiful QR codes — generated in seconds.</p>
+  </div>
+  <div class="cta-action">
+    <a href="/generator" class="cta-btn">
+      Open Studio <span class="cta-arrow">→</span>
+    </a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Just<span>ify</span></div>
+  <div class="footer-copy">
+    Crafted by <a href="https://www.linkedin.com/in/harshil-kholiya-036937271" class="footer-link" target="_blank">Harshil Kholiya</a>
+    &nbsp;·&nbsp; Powered by Python &amp; Flask
+  </div>
+</footer>
+
+<script>
+// ── CURSOR ──
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+function animateCursor() {
+  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
+  rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  requestAnimationFrame(animateCursor);
+}
+animateCursor();
+
+// ── MINI QR DOTS (random pattern) ──
+function makeQrDots(id, size, pattern) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  for (let i = 0; i < size * size; i++) {
+    const d = document.createElement('div');
+    d.className = 'qr-dot';
+    d.style.borderRadius = '1px';
+    // Create QR-like pattern with corners
+    const r = Math.floor(i / size), c = i % size;
+    const inCorner = (r < 2 && c < 2) || (r < 2 && c >= size-2) || (r >= size-2 && c < 2);
+    d.style.opacity = inCorner || Math.random() > 0.45 ? '1' : '0';
+    d.style.background = 'inherit';
+    el.appendChild(d);
+  }
+}
+// Get colors from parent
+document.querySelectorAll('.qr-dot').forEach(d => {
+  const card = d.closest('.qr-mock');
+  if (!card) return;
+});
+makeQrDots('miniQr1', 7, 'gold');
+makeQrDots('miniQr2', 6, 'purple');
+makeQrDots('miniQr3', 5, 'teal');
+
+// ── MARQUEE ──
+const words = ['Classic','Neon Pulse','Inferno','Forest','Galaxy','Gold Rush','Ocean','Rose Gold','Midnight'];
+const m = document.getElementById('marquee');
+const repeat = [...words, ...words, ...words, ...words];
+repeat.forEach(w => {
+  const s = document.createElement('span');
+  s.textContent = w;
+  m.appendChild(s);
+});
+
+// ── SMOOTH SCROLL ──
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+// ── SCROLL REVEAL ──
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.opacity = '1';
+      e.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.feat-card, .tmpl-item').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(30px)';
+  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
