@@ -603,7 +603,7 @@ footer {
 
     <div class="eyebrow">
       <div class="eyebrow-line"></div>
-      <div class="eyebrow-text">QR Code Studio · Est. 2024</div>
+      <div class="eyebrow-text">QR Code Studio · Est. 2026</div>
     </div>
 
     <h1 class="hero-headline">
@@ -809,57 +809,96 @@ footer {
 const cur = document.getElementById('cursor');
 const ring = document.getElementById('cursorRing');
 let mx = 0, my = 0, rx = 0, ry = 0;
-document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX;
+  my = e.clientY;
+});
+
 function animateCursor() {
-  cur.style.left = mx + 'px'; cur.style.top = my + 'px';
-  rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
-  ring.style.left = rx + 'px'; ring.style.top = ry + 'px';
+  cur.style.left = mx + 'px';
+  cur.style.top = my + 'px';
+
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+
+  ring.style.left = rx + 'px';
+  ring.style.top = ry + 'px';
+
   requestAnimationFrame(animateCursor);
 }
 animateCursor();
 
-// ── MINI QR DOTS (random pattern) ──
-function makeQrDots(id, size, pattern) {
+
+// ── MINI QR DOTS FIXED ──
+function makeQrDots(id, size) {
   const el = document.getElementById(id);
   if (!el) return;
+
+  // clear old dots
+  el.innerHTML = "";
+
+  const card = el.closest('.qr-mock');
+
+  // detect dot color based on card
+  let dotColor = "#000";
+
+  if (card.classList.contains("qr-mock-1")) dotColor = "#d4a017";
+  if (card.classList.contains("qr-mock-2")) dotColor = "#9b5de5";
+  if (card.classList.contains("qr-mock-3")) dotColor = "#00c8c0";
+
   for (let i = 0; i < size * size; i++) {
     const d = document.createElement('div');
     d.className = 'qr-dot';
-    d.style.borderRadius = '1px';
-    // Create QR-like pattern with corners
-    const r = Math.floor(i / size), c = i % size;
-    const inCorner = (r < 2 && c < 2) || (r < 2 && c >= size-2) || (r >= size-2 && c < 2);
-    d.style.opacity = inCorner || Math.random() > 0.45 ? '1' : '0';
-    d.style.background = 'inherit';
+
+    const r = Math.floor(i / size);
+    const c = i % size;
+
+    // Fake QR corner pattern
+    const inCorner =
+      (r < 2 && c < 2) ||
+      (r < 2 && c >= size - 2) ||
+      (r >= size - 2 && c < 2);
+
+    d.style.background = dotColor;
+    d.style.opacity = inCorner || Math.random() > 0.45 ? "1" : "0";
+
     el.appendChild(d);
   }
 }
-// Get colors from parent
-document.querySelectorAll('.qr-dot').forEach(d => {
-  const card = d.closest('.qr-mock');
-  if (!card) return;
-});
-makeQrDots('miniQr1', 7, 'gold');
-makeQrDots('miniQr2', 6, 'purple');
-makeQrDots('miniQr3', 5, 'teal');
+
+// Generate QR patterns
+makeQrDots('miniQr1', 7);
+makeQrDots('miniQr2', 6);
+makeQrDots('miniQr3', 5);
+
 
 // ── MARQUEE ──
-const words = ['Classic','Neon Pulse','Inferno','Forest','Galaxy','Gold Rush','Ocean','Rose Gold','Midnight'];
+const words = [
+  'Classic','Neon Pulse','Inferno','Forest',
+  'Galaxy','Gold Rush','Ocean','Rose Gold','Midnight'
+];
+
 const m = document.getElementById('marquee');
 const repeat = [...words, ...words, ...words, ...words];
+
 repeat.forEach(w => {
   const s = document.createElement('span');
   s.textContent = w;
   m.appendChild(s);
 });
 
+
 // ── SMOOTH SCROLL ──
 document.querySelectorAll('a[href^="#"]').forEach(a => {
   a.addEventListener('click', e => {
     e.preventDefault();
-    document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({
+      behavior: 'smooth'
+    });
   });
 });
+
 
 // ── SCROLL REVEAL ──
 const observer = new IntersectionObserver(entries => {
@@ -870,6 +909,7 @@ const observer = new IntersectionObserver(entries => {
     }
   });
 }, { threshold: 0.1 });
+
 document.querySelectorAll('.feat-card, .tmpl-item').forEach(el => {
   el.style.opacity = '0';
   el.style.transform = 'translateY(30px)';
