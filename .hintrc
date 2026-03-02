@@ -8,10 +8,13 @@
       {
         "ignore": [
           "backdrop-filter",
-          "user-select"
+          "user-select",
+          "scrollbar-width",
+          "scrollbar-width: none"
         ]
       }
     ],
-    "no-inline-styles": "off"
+    "no-inline-styles": "off",
+    "disown-opener": "off"
   }
 }
