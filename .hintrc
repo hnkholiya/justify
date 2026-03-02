@@ -2,15 +2,18 @@
   "extends": [
     "development"
   ],
-  "browserslist": [
-    "defaults",
-    "not ie 11",
-    "not chrome <= 112",
-    "not ios_saf <= 18.6",
-    "not safari <= 18.6",
-    "not samsung <= 28"
-  ],
   "hints": {
+    "compat-api/css": [
+      "default",
+      {
+        "ignore": [
+          "backdrop-filter",
+          "user-select",
+          "scrollbar-width",
+          "scrollbar-width: none"
+        ]
+      }
+    ],
     "no-inline-styles": "off",
     "disown-opener": "off"
   }
